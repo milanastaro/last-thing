@@ -1,0 +1,5 @@
+body { font-family: Arial; background: #f7f7f7; }
+header { background: #1c3d5a; color: white; padding: 1rem; }
+main { background: white; margin: 1rem auto; padding: 1rem; max-width: 900px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }

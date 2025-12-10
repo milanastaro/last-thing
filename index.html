@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Buffalo Bills Game Location Analysis</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Buffalo Bills Game Location Analysis</h1>
+    <p class="subtitle">Web scraping · SQLite & SQL · Interactive visualization</p>
+  </header>
+
+  <main>
+    <section id="overview">
+      <h2>1. Overview</h2>
+      <p>This project analyzes Buffalo Bills game locations for the 2022 and 2023 seasons.</p>
+    </section>
+
+    <section id="web-scraping">
+      <h2>2. Web Scraping</h2>
+      <p>Data scraped from Wikipedia season pages using Python + BeautifulSoup.</p>
+    </section>
+
+    <section id="database">
+      <h2>3. Database & SQL</h2>
+      <p>SQLite database created from scraped CSV, queries used to export summary CSV.</p>
+    </section>
+
+    <section id="web-app">
+      <h2>4. Web App</h2>
+      <div id="controls">
+        <label>Select season:</label>
+        <select id="season-select"><option value="all">All seasons</option></select>
+      </div>
+
+      <table id="summary-table">
+        <thead><tr><th>Season</th><th>Location</th><th>Games</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
