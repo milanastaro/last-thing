@@ -25,14 +25,14 @@ async function loadCSV(path) {
 
     const cols = line.split(delim);
 
-    // Safely grab by index: 0 = season, 1 = location, 2 = games
+    // 0 = season, 1 = location, 2 = score
     const season = (cols[0] || "").trim();
     const location = (cols[1] || "").trim();
-    const games = (cols[2] || "").trim();
+    const score = (cols[2] || "").trim();
 
-    if (!season && !location && !games) continue;
+    if (!season && !location && !score) continue;
 
-    rows.push({ season, location, games });
+    rows.push({ season, location, score });
   }
 
   return rows;
@@ -67,30 +67,93 @@ function renderTable(rows, filterSeason = "all") {
     const tdLocation = document.createElement("td");
     tdLocation.textContent = row.location || "(Unknown)";
 
-    const tdGames = document.createElement("td");
-    tdGames.textContent = row.games || "0";
+    const tdScore = document.createElement("td");
+    tdScore.textContent = row.score || "(Unknown)";
 
     tr.appendChild(tdSeason);
     tr.appendChild(tdLocation);
-    tr.appendChild(tdGames);
+    tr.appendChild(tdScore);
 
     tbody.appendChild(tr);
+  });
+}
+
+// Same coords object as before
+const teamCoords = {
+  "Buffalo Bills": [42.7738, -78.7868],
+  "Buffalo Bills (Highmark Stadium - Orchard Park, NY)": [42.7738, -78.7868],
+
+  "Miami Dolphins": [25.958, -80.2389],
+  "Miami Dolphins (Miami Gardens, FL)": [25.958, -80.2389],
+
+  "New England Patriots": [42.0909, -71.2643],
+  "New England Patriots (Foxborough, MA)": [42.0909, -71.2643],
+
+  "New York Jets": [40.8136, -74.0744],
+  "New York Jets (East Rutherford, NJ)": [40.8136, -74.0744],
+
+  "Baltimore Ravens": [39.278, -76.6227],
+  "Baltimore Ravens (Baltimore, MD)": [39.278, -76.6227],
+};
+
+// Try to resolve a location string to coordinates by matching team name inside it
+function getCoordsForLocation(loc) {
+  if (!loc) return null;
+
+  // Direct match first
+  if (teamCoords[loc]) {
+    return teamCoords[loc];
+  }
+
+  // Fuzzy match: see if the location string contains a known team name
+  for (const name in teamCoords) {
+    if (loc.includes(name)) {
+      return teamCoords[name];
+    }
+  }
+
+  return null;
+}
+
+function initMap(rows) {
+  const mapDiv = document.getElementById("map");
+  if (!mapDiv || typeof L === "undefined") {
+    return;
+  }
+
+  const map = L.map("map").setView([39.8283, -98.5795], 4); // center on USA
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  // Count how many rows we have per location (ignoring score)
+  const counts = {};
+  rows.forEach(r => {
+    const loc = r.location;
+    if (!loc) return;
+    counts[loc] = (counts[loc] || 0) + 1;
+  });
+
+  Object.entries(counts).forEach(([loc, count]) => {
+    const coords = getCoordsForLocation(loc);
+    if (!coords) return;
+
+    const [lat, lng] = coords;
+    const marker = L.marker([lat, lng]).addTo(map);
+    marker.bindPopup(`<strong>${loc}</strong><br/>Games in this dataset: ${count}`);
   });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const rows = await loadCSV("home_away_summary.csv");
-
-    // Debug log in case something is off
     console.log("Loaded rows:", rows);
-
-    if (!rows.length) {
-      console.warn("No rows loaded from CSV.");
-    }
 
     populateSeasonSelect(rows);
     renderTable(rows);
+    initMap(rows);
 
     const select = document.getElementById("season-select");
     select.addEventListener("change", () => {

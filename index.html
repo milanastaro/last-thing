@@ -2,45 +2,220 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Buffalo Bills Game Location Analysis</title>
+  <title>Buffalo Bills Game Locations & Scores (2022–2023)</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Leaflet map CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 </head>
 <body>
   <header>
-    <h1>Buffalo Bills Game Location Analysis</h1>
-    <p class="subtitle">Web scraping · SQLite & SQL · Interactive visualization</p>
+    <h1>Buffalo Bills Game Locations &amp; Scores (2022–2023)</h1>
+    <p class="subtitle">Web scraping · SQLite &amp; SQL · Interactive web app</p>
   </header>
 
   <main>
+    <!-- 1. OVERVIEW -->
     <section id="overview">
       <h2>1. Overview</h2>
-      <p>This project analyzes Buffalo Bills game locations for the 2022 and 2023 seasons.</p>
+      <p>
+        This project looks at a small sample of <strong>Buffalo Bills</strong> games
+        from the <strong>2022</strong> and <strong>2023</strong> seasons. The goal
+        is to demonstrate the full pipeline from web scraping to database storage,
+        SQL summarization, and a simple interactive web app that shows where the
+        games were played and what the final scores were.
+      </p>
+      <p>
+        On this page, you can:
+      </p>
+      <ul>
+        <li>Filter games by season using the dropdown menu.</li>
+        <li>See the <strong>location</strong> and <strong>final score</strong> for each game.</li>
+        <li>View an approximate <strong>map</strong> of where the games took place.</li>
+      </ul>
     </section>
 
+    <!-- 2. WEB SCRAPING -->
     <section id="web-scraping">
       <h2>2. Web Scraping</h2>
-      <p>Data scraped from Wikipedia season pages using Python + BeautifulSoup.</p>
+      <p>
+        All of the raw data for this project comes from web scraping.
+        I collected Buffalo Bills game schedules and results from the following
+        Wikipedia pages:
+      </p>
+      <ul>
+        <li>
+          <a href="https://en.wikipedia.org/wiki/2022_Buffalo_Bills_season" target="_blank">
+            2022 Buffalo Bills season
+          </a>
+        </li>
+        <li>
+          <a href="https://en.wikipedia.org/wiki/2023_Buffalo_Bills_season" target="_blank">
+            2023 Buffalo Bills season
+          </a>
+        </li>
+      </ul>
+
+      <p>
+        I used Python's <code>requests</code> library to send HTTP GET requests
+        (with a custom User-Agent header so Wikipedia doesn't block the requests),
+        and <code>BeautifulSoup</code> to parse the HTML and locate the game
+        schedule tables. I looked for a <code>wikitable</code> whose header row
+        contained columns like <em>Date</em>, <em>Opponent</em>, and <em>Result</em>.
+      </p>
+
+      <p>The core scraping logic looks like this:</p>
+
+<pre><code>import requests
+from bs4 import BeautifulSoup
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 ..."
+}
+
+url = "https://en.wikipedia.org/wiki/2022_Buffalo_Bills_season"
+resp = requests.get(url, headers=HEADERS, timeout=10)
+soup = BeautifulSoup(resp.text, "html.parser")
+
+table = soup.find("table", {"class": "wikitable"})
+rows = []
+for tr in table.find_all("tr")[1:]:  # skip header
+    cols = [td.get_text(strip=True) for td in tr.find_all(["th", "td"])]
+    rows.append(cols)
+</code></pre>
+
+      <p>
+        I used an AI assistant to help design the initial scraper and table
+        selection logic. Example prompt:
+      </p>
+      <blockquote>
+        "Write a Python function that uses requests and BeautifulSoup to scrape
+        the game schedule table from the Wikipedia pages '2022 Buffalo Bills
+        season' and '2023 Buffalo Bills season'. Return a list of dictionaries
+        with keys: 'season', 'date', 'opponent', 'location', 'result', 'score'.
+        Automatically detect the correct table from the header row and strip
+        whitespace. Include a User-Agent header to avoid 403 errors."
+      </blockquote>
     </section>
 
+    <!-- 3. DATABASE & SQL -->
     <section id="database">
-      <h2>3. Database & SQL</h2>
-      <p>SQLite database created from scraped CSV, queries used to export summary CSV.</p>
+      <h2>3. Database &amp; SQL</h2>
+      <p>
+        After scraping, I stored the data in a SQLite database called
+        <code>football.db</code>. I created a single table called
+        <code>games</code> with the following schema:
+      </p>
+
+<pre><code>CREATE TABLE games (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    season   TEXT,
+    date     TEXT,
+    opponent TEXT,
+    location TEXT,
+    result   TEXT,
+    score    TEXT
+);</code></pre>
+
+      <p>
+        The scraped rows were first written to <code>games_raw.csv</code>, and then
+        loaded into the <code>games</code> table. I used SQL queries to explore
+        and summarize the data. Some examples:
+      </p>
+
+<pre><code>-- How many games per season
+SELECT season, COUNT(*) AS games_played
+FROM games
+GROUP BY season;
+
+-- Simple win/loss breakdown (based on the result string)
+SELECT
+    season,
+    CASE
+        WHEN result LIKE 'W%' THEN 'Win'
+        WHEN result LIKE 'L%' THEN 'Loss'
+        ELSE 'Other'
+    END AS outcome,
+    COUNT(*) AS games
+FROM games
+GROUP BY season, outcome;</code></pre>
+
+      <p>
+        For this web app, I focused on a small subset of games and exported a
+        simplified CSV file with three columns:
+        <code>season</code>, <code>location</code>, and <code>score</code>.
+        This CSV is named <code>home_away_summary.csv</code> and is what the
+        web app loads and displays.
+      </p>
     </section>
 
+    <!-- 4. WEB APPLICATION -->
     <section id="web-app">
-      <h2>4. Web App</h2>
+      <h2>4. Web Application</h2>
+      <p>
+        The web app below reads the CSV file
+        <code>home_away_summary.csv</code>, which contains a small sample of
+        Buffalo Bills games from 2022 and 2023. Each row in the CSV represents
+        a game with its season, location (stadium or opponent city), and final score.
+      </p>
+
       <div id="controls">
-        <label>Select season:</label>
-        <select id="season-select"><option value="all">All seasons</option></select>
+        <label for="season-select">Select season:</label>
+        <select id="season-select">
+          <option value="all">All seasons</option>
+        </select>
       </div>
 
       <table id="summary-table">
-        <thead><tr><th>Season</th><th>Location</th><th>Games</th></tr></thead>
-        <tbody></tbody>
+        <thead>
+          <tr>
+            <th>Season</th>
+            <th>Location (Site)</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filled by JavaScript -->
+        </tbody>
       </table>
+
+      <p class="note">
+        Use the dropdown to filter the table by season, or leave it on
+        <strong>All seasons</strong> to see the full set of games in this sample.
+        The score shown is the final score for that matchup.
+      </p>
+
+      <h3>5. Map of Game Locations</h3>
+      <p>
+        The map below shows approximate locations for the games in this sample.
+        Each marker corresponds to a city or stadium, and the popup displays
+        how many games in this dataset were played at that location.
+        The coordinates are approximate, based on typical stadium or city
+        locations for each opponent.
+      </p>
+      <div id="map"></div>
+
+      <p style="margin-top:1rem;">
+        View the full project code and data on GitHub:
+        <a href="https://github.com/milanastaro/last-thing" target="_blank">
+          https://github.com/milanastaro/last-thing
+        </a>
+      </p>
     </section>
   </main>
 
+  <footer>
+    <p>
+      Built for a football analytics final project and deployed using GitHub Pages.
+    </p>
+  </footer>
+
+  <!-- Leaflet JS for the map -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Your app logic -->
   <script src="app.js"></script>
 </body>
 </html>
+

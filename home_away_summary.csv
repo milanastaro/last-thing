@@ -1,8 +1,9 @@
-season;location;games
-2022;Buffalo Bills (Highmark Stadium - Orchard Park, NY);1
-2022;Miami Dolphins (Miami Gardens, FL);1
-2022;New England Patriots (Foxborough, MA);1
-2023;Buffalo Bills (Highmark Stadium - Orchard Park, NY);1
-2023;New York Jets (East Rutherford, NJ);1
-2023;Baltimore Ravens (Baltimore, MD);1
+season;location;score
+2022;Buffalo Bills (Highmark Stadium - Orchard Park, NY);31–10
+2022;Miami Dolphins (Miami Gardens, FL);19–21
+2022;New England Patriots (Foxborough, MA);24–10
+2023;Buffalo Bills (Highmark Stadium - Orchard Park, NY);38–10
+2023;New York Jets (East Rutherford, NJ);16–22
+2023;Baltimore Ravens (Baltimore, MD);20–23
+
 
