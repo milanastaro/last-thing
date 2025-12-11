@@ -23,17 +23,17 @@
       <p>
         This project looks at a small sample of <strong>Buffalo Bills</strong> games
         from the <strong>2022</strong> and <strong>2023</strong> seasons. The goal
-        is to demonstrate the full pipeline from web scraping to database storage,
-        SQL summarization, and a simple interactive web app that shows where the
-        games were played and what the final scores were.
+        is to demonstrate an end-to-end pipeline: web scraping, storing the data
+        in a SQLite database, summarizing it with SQL, and presenting it in a
+        simple interactive web app.
       </p>
       <p>
         On this page, you can:
       </p>
       <ul>
         <li>Filter games by season using the dropdown menu.</li>
-        <li>See the <strong>location</strong> and <strong>final score</strong> for each game.</li>
-        <li>View an approximate <strong>map</strong> of where the games took place.</li>
+        <li>See the <strong>location</strong> and <strong>final score</strong> for each game in the sample.</li>
+        <li>View an approximate <strong>map</strong> of where those games were played.</li>
       </ul>
     </section>
 
@@ -41,9 +41,8 @@
     <section id="web-scraping">
       <h2>2. Web Scraping</h2>
       <p>
-        All of the raw data for this project comes from web scraping.
-        I collected Buffalo Bills game schedules and results from the following
-        Wikipedia pages:
+        All data begins with web scraping. I collected Buffalo Bills game schedules
+        and results from the following Wikipedia pages:
       </p>
       <ul>
         <li>
@@ -59,14 +58,12 @@
       </ul>
 
       <p>
-        I used Python's <code>requests</code> library to send HTTP GET requests
-        (with a custom User-Agent header so Wikipedia doesn't block the requests),
-        and <code>BeautifulSoup</code> to parse the HTML and locate the game
-        schedule tables. I looked for a <code>wikitable</code> whose header row
-        contained columns like <em>Date</em>, <em>Opponent</em>, and <em>Result</em>.
+        I used Python's <code>requests</code> library (with a custom User-Agent)
+        to send HTTP GET requests to these pages, and <code>BeautifulSoup</code>
+        to parse the HTML and locate the schedule tables. The scraper looks for
+        a <code>wikitable</code> whose header row includes columns like
+        <em>Date</em>, <em>Opponent</em>, and <em>Result</em>.
       </p>
-
-      <p>The core scraping logic looks like this:</p>
 
 <pre><code>import requests
 from bs4 import BeautifulSoup
@@ -105,8 +102,7 @@ for tr in table.find_all("tr")[1:]:  # skip header
       <h2>3. Database &amp; SQL</h2>
       <p>
         After scraping, I stored the data in a SQLite database called
-        <code>football.db</code>. I created a single table called
-        <code>games</code> with the following schema:
+        <code>football.db</code>. I created a single table, <code>games</code>:
       </p>
 
 <pre><code>CREATE TABLE games (
@@ -120,9 +116,9 @@ for tr in table.find_all("tr")[1:]:  # skip header
 );</code></pre>
 
       <p>
-        The scraped rows were first written to <code>games_raw.csv</code>, and then
-        loaded into the <code>games</code> table. I used SQL queries to explore
-        and summarize the data. Some examples:
+        The scraped rows were first written to <code>games_raw.csv</code>,
+        then loaded into the <code>games</code> table. I used SQL queries to
+        explore and summarize the data. For example:
       </p>
 
 <pre><code>-- How many games per season
@@ -130,7 +126,7 @@ SELECT season, COUNT(*) AS games_played
 FROM games
 GROUP BY season;
 
--- Simple win/loss breakdown (based on the result string)
+-- Simple win/loss breakdown
 SELECT
     season,
     CASE
@@ -143,11 +139,10 @@ FROM games
 GROUP BY season, outcome;</code></pre>
 
       <p>
-        For this web app, I focused on a small subset of games and exported a
-        simplified CSV file with three columns:
-        <code>season</code>, <code>location</code>, and <code>score</code>.
-        This CSV is named <code>home_away_summary.csv</code> and is what the
-        web app loads and displays.
+        For the web app, I focused on a small set of games and exported a
+        simplified CSV with three columns: <code>season</code>,
+        <code>location</code>, and <code>score</code>. This file is named
+        <code>home_away_summary.csv</code> and is what the web app loads.
       </p>
     </section>
 
@@ -155,10 +150,10 @@ GROUP BY season, outcome;</code></pre>
     <section id="web-app">
       <h2>4. Web Application</h2>
       <p>
-        The web app below reads the CSV file
-        <code>home_away_summary.csv</code>, which contains a small sample of
-        Buffalo Bills games from 2022 and 2023. Each row in the CSV represents
-        a game with its season, location (stadium or opponent city), and final score.
+        The interactive web app below reads <code>home_away_summary.csv</code>,
+        which contains a sample of Buffalo Bills games from 2022 and 2023.
+        Each row represents one game in the sample, with its season, location,
+        and final score.
       </p>
 
       <div id="controls">
@@ -183,7 +178,7 @@ GROUP BY season, outcome;</code></pre>
 
       <p class="note">
         Use the dropdown to filter the table by season, or leave it on
-        <strong>All seasons</strong> to see the full set of games in this sample.
+        <strong>All seasons</strong> to see the full sample.
         The score shown is the final score for that matchup.
       </p>
 
