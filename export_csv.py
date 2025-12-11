@@ -6,11 +6,15 @@ conn = sqlite3.connect("football.db")
 cur = conn.cursor()
 
 query = """
-SELECT season,
-       REPLACE(location, ',', ' - ') AS location,
-       COUNT(*) AS games
+SELECT
+  season,
+  CASE
+    WHEN TRIM(location) = '' THEN opponent
+    ELSE REPLACE(location, ',', ' - ')
+  END AS display_location,
+  COUNT(*) AS games
 FROM games
-GROUP BY season, location;
+GROUP BY season, display_location;
 """
 
 rows = cur.execute(query).fetchall()
@@ -21,5 +25,4 @@ with open("home_away_summary.csv", "w", newline="", encoding="utf-8") as f:
     writer.writerow(["season", "location", "games"])
     writer.writerows(rows)
 
-print("home_away_summary.csv created successfully with ';' as delimiter!")
-
+print("home_away_summary.csv created successfully with ';' as delimiter and cleaned locations!")
